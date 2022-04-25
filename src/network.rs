@@ -26,7 +26,7 @@ use crate::{
 };
 
 pub const NUM_LAYERS: usize = 4;
-pub const LAYER_SIZES: [usize; NUM_LAYERS] = [ 4, 8, 8, 4 ];
+pub const LAYER_SIZES: [usize; NUM_LAYERS] = [ 8, 32, 32, 16 ];
 
 #[derive(Debug)]
 pub struct Network {

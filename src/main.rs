@@ -25,7 +25,7 @@ use crate::{
 
 const DATA_FILE_NAME: &'static str = "NCAA Mens March Madness Historical Results.csv";
 const MODEL_FILE_NAME: &'static str = "model.mmp";
-const NUM_GENS: usize = 50;
+const NUM_GENS: usize = 1000;
 
 // Entry point
 #[tokio::main]
