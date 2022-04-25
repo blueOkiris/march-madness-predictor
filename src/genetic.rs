@@ -75,11 +75,13 @@ async fn single_test(pred: Arc<Mutex<Network>>, game: Arc<RawGameInfo>) -> u64 {
     let pred = &pred.lock().await;
     let res = pred.result(game.clone()).await;
     res.iter().zip(game.output_bits.iter()).map(|(res_bit, expected)| {
-        if *res_bit == *expected {
-            1
-        } else {
-            0
+        let mut bits_correct = 0;
+        for i in 0..8 {
+            if ((res_bit >> i) & 0x01) == ((expected >> i) & 0x01) {
+                bits_correct += 1;
+            }
         }
+        bits_correct
     }).sum()
 }
 

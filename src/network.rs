@@ -55,7 +55,7 @@ impl Network {
     }
 
     // Cannot be parallelized
-    pub async fn result(&self, game: Arc<RawGameInfo>) -> Vec<bool> {
+    pub async fn result(&self, game: Arc<RawGameInfo>) -> Vec<u8> {
         let mut last_bits = game;
         for layer_conn in self.layer_conn_set.iter() {
             let layer = activations(layer_conn, last_bits).await;

@@ -9,8 +9,8 @@ use csv::{
 };
 use serde::Deserialize;
 
-pub const NUM_INPUTS: usize = 68 * 8;
-pub const NUM_OUTPUTS: usize = 24;
+pub const NUM_INPUTS: usize = 68 * 8; // In bits
+pub const NUM_OUTPUTS: usize = 24; // In bits
 const NAME_LEN: usize = 32; // Max name length
 
 /* This is how we'll load in data from the CSV */
@@ -192,25 +192,8 @@ impl GameInfo {
     }
 
     // "Output bits are the scores" we can just store it as two bytes
-    pub fn to_output_bits(self) -> [bool; NUM_OUTPUTS] {
-        let mut bits = [false; NUM_OUTPUTS];
-        let mut i = 0;
-
-        for j in 0..8 {
-            bits[i] = ((self.win_score >> j) & 0x01) == 0x01;
-            i += 1;
-        }
-        for j in 0..8 {
-            bits[i] = ((self.lose_score >> j) & 0x01) == 0x01;
-            i += 1;
-        }
-
-        for j in 0..8 {
-            bits[i] = ((self.overtime >> j) & 0x01) == 0x01;
-            i += 1;
-        }
-
-        bits
+    pub fn to_output_bits(self) -> [u8; NUM_OUTPUTS / 8] {
+        [ self.win_score, self.lose_score, self.overtime ]
     }
 
     /*
@@ -221,38 +204,22 @@ impl GameInfo {
     * In total:
     * R&R (1), WS&LS (1), Winner Name (32), Loser Name (32), Overtime (1) = 69 u8s
     */
-    pub fn to_input_bits(self) -> [bool; NUM_INPUTS] {
-        let mut bits = [false; NUM_INPUTS];
+    pub fn to_input_bits(self) -> [u8; NUM_INPUTS / 8] {
+        let mut bits = [0; NUM_INPUTS / 8];
+
+        bits[0] = (self.date >> 8) as u8;
+        bits[1] = (self.date & 0x000F) as u8;
+        bits[2] = ((self.round as u8 & 0x07) << 3) + (self.region as u8 & 0x07);
+        bits[3] = ((self.win_seed & 0x0F) << 4) + (self.lose_seed & 0x0F);
+
         let mut i = 0;
-
-        for j in 0..16 {
-            bits[i] = ((self.date >> j) & 0x01) == 0x01;
-            i += 1;
-        }
-
-        let rnr = ((self.round as u8 & 0x07) << 3) + (self.region as u8 & 0x07);
-        for j in 0..8 {
-            bits[i] = ((rnr >> j) & 0x01) == 0x01;
-            i += 1;
-        }
-
-        let wsls = ((self.win_seed & 0x0F) << 4) + (self.lose_seed & 0x0F);
-        for j in 0..8 {
-            bits[i] = ((wsls >> j) & 0x01) == 0x01;
-            i += 1;
-        }
-
         for c in self.winner {
-            for j in 0..8 {
-                bits[i] = ((c >> j) & 0x01) == 0x01;
-                i += 1;
-            }
+            bits[4 + i] = c as u8;
+            i += 1;
         }
         for c in self.loser {
-            for j in 0..8 {
-                bits[i] = ((c >> j) & 0x01) == 0x01;
-                i += 1;
-            }
+            bits[4 + i] = c as u8;
+            i += 1;
         }
 
         bits
@@ -264,8 +231,8 @@ impl GameInfo {
  */
 
 pub struct RawGameInfo {
-    pub input_bits: Vec<bool>,
-    pub output_bits: Vec<bool>
+    pub input_bits: Vec<u8>, // Bit arrays. Could use Vec<bool>, but SHOULD be more efficient
+    pub output_bits: Vec<u8>
 }
 
 pub struct DataSet {

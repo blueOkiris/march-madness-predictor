@@ -25,7 +25,7 @@ use crate::{
 
 const DATA_FILE_NAME: &'static str = "NCAA Mens March Madness Historical Results.csv";
 const MODEL_FILE_NAME: &'static str = "model.mmp";
-const NUM_GENS: usize = 1000;
+const NUM_GENS: usize = 2;
 
 // Entry point
 #[tokio::main]
@@ -122,28 +122,9 @@ pub async fn predict(team_names: &str) {
     let predictor = Network::from_file(MODEL_FILE_NAME);
     let result = predictor.result(raw_game).await;
 
-    let mut win_score: u8 = 0;
-    for i in 0..8 {
-        if result[i] {
-            win_score += 0x01 << i;
-        }
-    }
-    let mut lose_score: u8 = 0;
-    for i in 0..8 {
-        if result[i + 8] {
-            lose_score += 0x01 << i;
-        }
-    }
-    let mut overtime: u8 = 0;
-    for i in 0..8 {
-        if result[i + 16] {
-            overtime += 0x01 << i;
-        }
-    }
-
-    println!("Predicted score for {}: {}", indexable_table_data[0], win_score);
-    println!("Predicted score for {}: {}", indexable_table_data[2], lose_score);
-    println!("Expected overtimes: {}", overtime);
+    println!("Predicted score for {}: {}", indexable_table_data[0], result[0]);
+    println!("Predicted score for {}: {}", indexable_table_data[2], result[1]);
+    println!("Expected overtimes: {}", result[2]);
 }
 
 // Note that data in Game prediction should be alphabetical team name

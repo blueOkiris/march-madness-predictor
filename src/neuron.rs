@@ -59,23 +59,43 @@ pub async fn random_gen_neurons(
  * Slower to use parallelism like above
  */
 pub async fn activations(
-        neurons: &Vec<Arc<Mutex<Vec<(f64, f64)>>>>, game: Arc<RawGameInfo>) -> Vec<bool> {
+        neurons: &Vec<Arc<Mutex<Vec<(f64, f64)>>>>, game: Arc<RawGameInfo>) -> Vec<u8> {
     let mut activates = Vec::new();
+    let mut curr_byte: u8 = 0; // Store results into packed bit arrays
+    let mut bit: u8 = 0;
     for neuron in neurons {
-        activates.push(activated(neuron.clone(), game.clone()).await);
+        if activated(neuron.clone(), game.clone()).await {
+            curr_byte += 0x01 << (7 - bit);
+        }
+        bit += 1;
+
+        if bit == 8 {
+            activates.push(curr_byte);
+
+            curr_byte = 0;
+            bit = 0;
+        }
     }
     activates
 }
 
 // Helper function to get activated status of a Vec<f64>
 pub async fn activated(neuron: Arc<Mutex<Vec<(f64, f64)>>>, game: Arc<RawGameInfo>) -> bool {
-    neuron.lock().await.iter().zip(game.input_bits.iter()).map(|((weight, offset), input)| {
-        weight * if *input {
-            1.0
-        } else {
-            0.0
-        } + offset
-    }).sum::<f64>() > NEURON_ACTIVATION_THRESH
+    let mut bit: u8 = 0; // Input bits are stored as, you guessed it, bits, so need to index by bit
+    let mut byte_ind: usize = 0; // After bit goes over 8, we increase the byte
+    let mut sum: f64 = 0.0;
+    for (weight, offset) in neuron.lock().await.iter() {
+        let input = game.input_bits[byte_ind] >> (7 - bit) & 0x01;
+        sum += weight * input as f64 + offset;
+
+        // Move throught the input array
+        bit += 1;
+        if bit == 8 {
+            byte_ind += 1;
+            bit = 0;
+        }
+    }
+    sum > NEURON_ACTIVATION_THRESH
 }
 
 // Helper functions to trade between weights
