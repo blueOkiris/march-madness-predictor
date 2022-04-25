@@ -8,10 +8,6 @@ This is not a serious attempt at a march madness predictor but rather an exercis
 
 Data collected [from here](https://data.world/sports/ncaa-mens-march-madness).
 
-## Licensing
-
-This software does not contain a license meaning that although you are allowed to view the code, this currently falls under exclusive copyright law. You do not have permission to use, modify, or share the code in this project
-
 ## Build/Run
 
 You just need the Rust build system, `cargo`
