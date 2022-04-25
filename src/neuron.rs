@@ -9,10 +9,10 @@ use rand::{
 use crate::data::RawGameInfo;
 
 pub const NEURON_ACTIVATION_THRESH: f64 = 0.60;
-pub const TRAIT_SWAP_CHANCE: f64 = 0.60;
-pub const WEIGHT_MUTATE_CHANCE: f64 = 0.35;
-pub const WEIGHT_MUTATE_AMOUNT: f64 = 0.015;
-pub const OFFSET_MUTATE_CHANCE: f64 = 0.10;
+pub const TRAIT_SWAP_CHANCE: f64 = 0.80;
+pub const WEIGHT_MUTATE_CHANCE: f64 = 0.65;
+pub const WEIGHT_MUTATE_AMOUNT: f64 = 0.5;
+pub const OFFSET_MUTATE_CHANCE: f64 = 0.25;
 pub const OFFSET_MUTATE_AMOUNT: f64 = 0.05;
 
 // A neuron doesn't actually exist, only the connections between them
