@@ -8,10 +8,7 @@ mod network;
 mod genetic;
 mod data;
 
-use std::{
-    sync::Arc,
-    time::Instant
-};
+use std::time::Instant;
 use clap::{
     Arg, Command, crate_version, ArgMatches
 };
@@ -25,7 +22,7 @@ use crate::{
 
 const DATA_FILE_NAME: &'static str = "NCAA Mens March Madness Historical Results.csv";
 const MODEL_FILE_NAME: &'static str = "model.mmp";
-const NUM_GENS: usize = 2;
+const NUM_GENS: usize = 1000;
 
 // Entry point
 #[tokio::main]
@@ -45,15 +42,15 @@ pub async fn train() {
 
     println!("Loading training data from {}", DATA_FILE_NAME);
     let games = GameInfo::collection_from_file(DATA_FILE_NAME);
-    let games: Vec<Arc<RawGameInfo>> = games.iter().map(|game| { // Redefines games
-        Arc::new(RawGameInfo {
+    let games: Vec<RawGameInfo> = games.iter().map(|game| { // Redefines games
+        RawGameInfo {
             input_bits: game.to_input_bits().to_vec(),
             output_bits: game.to_output_bits().to_vec()
-        })
+        }
     }).collect();
-    let data_set = Arc::new(DataSet {
+    let data_set = DataSet {
         games
-    });
+    };
 
     println!("Generating randomized population");
     let now = Instant::now();
@@ -64,16 +61,8 @@ pub async fn train() {
     println!("Starting training");
     for i in 0..NUM_GENS {
         println!("Generation {} / {}", i, NUM_GENS);
-
-        let now = Instant::now();
         test_and_sort(&mut pop, data_set.clone()).await;
-        let elapsed = now.elapsed();
-        println!("Test and sort took {}s", elapsed.as_secs_f64());
-
-        let now = Instant::now();
         reproduce(&mut pop).await;
-        let elapsed = now.elapsed();
-        println!("Reproduction took {}s", elapsed.as_secs_f64());
     }
 
     // Save algorithm
@@ -81,7 +70,7 @@ pub async fn train() {
 
     // One last test and sort after reproducing
     test_and_sort(&mut pop, data_set.clone()).await;
-    pop[0].lock().await.save_model(MODEL_FILE_NAME).await;
+    pop[0].save_model(MODEL_FILE_NAME).await;
 }
 
 // Load in a model and make a prediction
@@ -113,14 +102,14 @@ pub async fn predict(team_names: &str) {
         overtime: String::from("")
     };
     let game = GameInfo::from_table_entry(&entry);
-    let raw_game = Arc::new(RawGameInfo {
+    let raw_game = RawGameInfo {
         input_bits: game.to_input_bits().to_vec(),
         output_bits: game.to_output_bits().to_vec()
-    });
+    };
 
     println!("Predicting!");
     let predictor = Network::from_file(MODEL_FILE_NAME);
-    let result = predictor.result(raw_game).await;
+    let result = predictor.result(&raw_game).await;
 
     println!("Predicted score for {}: {}", indexable_table_data[0], result[0]);
     println!("Predicted score for {}: {}", indexable_table_data[2], result[1]);

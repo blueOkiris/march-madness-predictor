@@ -3,7 +3,6 @@
  * Description: Convert data from CSV to representation to raw "bits"
  */
 
-use std::sync::Arc;
 use csv::{
     Error, Reader
 };
@@ -230,11 +229,13 @@ impl GameInfo {
  * Just a helpful tool for dealing with the bits raw
  */
 
+#[derive(Clone)]
 pub struct RawGameInfo {
     pub input_bits: Vec<u8>, // Bit arrays. Could use Vec<bool>, but SHOULD be more efficient
     pub output_bits: Vec<u8>
 }
 
+#[derive(Clone)]
 pub struct DataSet {
-    pub games: Vec<Arc<RawGameInfo>>
+    pub games: Vec<RawGameInfo>
 }
