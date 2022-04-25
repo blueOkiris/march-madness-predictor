@@ -11,7 +11,7 @@ use tokio::sync::Mutex;
 use crate::data::RawGameInfo;
 
 pub const NEURON_ACTIVATION_THRESH: f64 = 0.75;
-pub const TRAIT_SWAP_CHANCE: f64 = 0.30;
+pub const TRAIT_SWAP_CHANCE: f64 = 0.75;
 pub const WEIGHT_MUTATE_CHANCE: f64 = 0.25;
 pub const WEIGHT_MUTATE_AMOUNT: f64 = 0.0015;
 pub const OFFSET_MUTATE_CHANCE: f64 = 0.05;
