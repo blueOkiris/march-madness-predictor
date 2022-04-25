@@ -61,15 +61,11 @@ pub async fn test_and_sort(pop: &mut Vec<Network>, data_set: DataSet) {
     println!("Gen best: {} / {} = {}", best, max, (best as f64) / (max as f64));
 }
 
-/*
- * Load input and output data and test performance (# output bits right)
- * Faster to do sequential here ~5s
- * Slowest function
- */
+// Load input and output data and test performance (# output bits right)
 async fn test_all(pred: Network, data_set: DataSet) -> u64 {
     let mut sum = 0;
     for game in data_set.games.iter() {
-        sum += single_test(pred.clone(), &game).await;
+        sum += single_test(pred.clone(), game).await;
     }
     sum
 }
