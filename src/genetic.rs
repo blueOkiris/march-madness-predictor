@@ -14,7 +14,7 @@ use crate::{
     }, network::Network
 };
 
-const POP_SIZE: usize = 5000;
+const POP_SIZE: usize = 10000;
 
 /*
  * Generate starting batch
