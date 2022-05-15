@@ -8,17 +8,21 @@ This is not a serious attempt at a march madness predictor but rather an exercis
 
 Data collected [from here](https://data.world/sports/ncaa-mens-march-madness).
 
+It's also a library. The neural network code is decoupled into its own `genetic/` folder, so it could be reused by other Rust projects!
+
 ## Build/Run
 
 You just need the Rust build system, `cargo`
 
 __Train:__
 
-`cargo run --release`
+`cargo run --release --bin mmp`
+
+The release is important because it adds a MAJOR performance boost
 
 __Predict:__
 
-`cargo run --release -- --predict=<team a name>,<team a seed>,<team b name>,<team b seed>,<date>,<round>,<region>`
+`cargo run --release --bin mmp -- --predict=<team a name>,<team a seed>,<team b name>,<team b seed>,<date>,<round>,<region>`
 
 Round can be (use backslashes to escape spaces):
 - Opening Round
@@ -38,4 +42,4 @@ Region can be (use backslashes to escape spaces):
 - Southwest
 
 Example:
-`cargo run --release -- --predict=Arkansas,9,Iowa,8,3/15/85,Round\ of\ 64,West`
+`cargo run --release --bin mmp -- --predict=Arkansas,9,Iowa,8,3/15/85,Round\ of\ 64,West`
