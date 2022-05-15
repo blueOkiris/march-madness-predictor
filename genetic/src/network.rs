@@ -109,7 +109,7 @@ impl Network {
         let num_inputs = usize::from_be_bytes(num_inputs_data);
         let mut num_outputs_data: [u8; NUM_USIZE_BYTES] = [0; NUM_USIZE_BYTES];
         file.read_exact(&mut num_outputs_data).expect("Failed to load model from file!");
-        let num_outputs = usize::from_be_bytes(num_inputs_data);
+        let num_outputs = usize::from_be_bytes(num_outputs_data);
         let mut layer_sizes = Vec::new();
         let mut layer_size_data: [u8; NUM_USIZE_BYTES] = [0; NUM_USIZE_BYTES];
         file.read_exact(&mut layer_size_data).expect("Failed to load model from file!");
@@ -124,7 +124,15 @@ impl Network {
             big_arr_size += layer_sizes[i] * layer_sizes[i + 1];
         }
         big_arr_size += layer_sizes[layer_sizes.len() - 1] * num_outputs;
-        big_arr_size *= 16; // 8 bytes for weight and 8 for offset
+        big_arr_size *= 8 * 6; // 8 for wgt, ofst, wgt & ofst chance & amnt
+        for i in 0 as usize..=layer_sizes.len() {
+            let out_layer_size = if i == layer_sizes.len() {
+                num_outputs
+            } else {
+                layer_sizes[i]
+            };
+            big_arr_size += 2 * 8 * out_layer_size;
+        }
         let mut big_arr = vec![0; big_arr_size];
 
         file.read_exact(&mut big_arr).expect("Failed to load model from file!");
@@ -241,7 +249,15 @@ impl Network {
             big_arr_size += self.layer_sizes[i] * self.layer_sizes[i + 1];
         }
         big_arr_size += self.layer_sizes[self.layer_sizes.len() - 1] * self.num_outputs;
-        big_arr_size *= 16; // 8 bytes for weight and 8 for offset
+        big_arr_size *= 8 * 6; // 8 for weight, offset, weight & offset mutate chance & amount
+        for i in 0 as usize..=self.layer_sizes.len() {
+            let out_layer_size = if i == self.layer_sizes.len() {
+                self.num_outputs
+            } else {
+                self.layer_sizes[i]
+            };
+            big_arr_size += 2 * 8 * out_layer_size;
+        }
         let mut big_arr = vec![0; big_arr_size];
 
         let mut x = 0;
@@ -258,6 +274,36 @@ impl Network {
                         big_arr[x] = offset_data[k];
                         x += 1;
                     }
+                    let weight_mutate_chance_data = conn.weight_mutate_chance.to_be_bytes();
+                    for k in 0..8 {
+                        big_arr[x] = weight_mutate_chance_data[k];
+                        x += 1;
+                    }
+                    let weight_mutate_amount_data = conn.weight_mutate_amount.to_be_bytes();
+                    for k in 0..8 {
+                        big_arr[x] = weight_mutate_amount_data[k];
+                        x += 1;
+                    }
+                    let offset_mutate_chance_data = conn.offset_mutate_chance.to_be_bytes();
+                    for k in 0..8 {
+                        big_arr[x] = offset_mutate_chance_data[k];
+                        x += 1;
+                    }
+                    let offset_mutate_amount_data = conn.offset_mutate_amount.to_be_bytes();
+                    for k in 0..8 {
+                        big_arr[x] = offset_mutate_amount_data[k];
+                        x += 1;
+                    }
+                }
+                let activation_thresh_data = conns.activation_thresh.to_be_bytes();
+                for k in 0..8 {
+                    big_arr[x] = activation_thresh_data[k];
+                    x += 1;
+                }
+                let trait_swap_chance_data = conns.trait_swap_chance.to_be_bytes();
+                for k in 0..8 {
+                    big_arr[x] = trait_swap_chance_data[k];
+                    x += 1;
                 }
             }
         }
