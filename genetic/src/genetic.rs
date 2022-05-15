@@ -61,7 +61,7 @@ pub async fn test_and_sort(pop: &mut Vec<Network>, data_set: &Vec<(Vec<u8>, Vec<
     println!("Sort took {}s", elapsed.as_secs_f64());
 
     let best = *pop_and_res[0].1;
-    let max = data_set.len() * data_set[0].1.len();
+    let max = data_set.len() * data_set[0].1.len() * 8;
     println!("Gen best: {} / {} = {}", best, max, (best as f64) / (max as f64));
 }
 
