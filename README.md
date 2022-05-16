@@ -8,7 +8,7 @@ This is not a serious attempt at a march madness predictor but rather an exercis
 
 Data collected [from here](https://data.world/sports/ncaa-mens-march-madness).
 
-It's also a library. The neural network code is decoupled into its own `genetic/` folder, so it could be reused by other Rust projects!
+Library used is something I've separated for use in other AI projects. It is maintained [here](https://github.com/blueOkiris/scratch_genetic).
 
 ## Build/Run
 
