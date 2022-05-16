@@ -3,6 +3,6 @@
  * Description: Collector for all the modules in the neural network
  */
 
-pub mod neuron;
-pub mod network;
+mod neuron;
+mod network;
 pub mod genetic;

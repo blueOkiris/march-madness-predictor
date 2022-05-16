@@ -5,16 +5,14 @@
 
 mod data;
 
-extern crate genetic;
+extern crate scratch_genetic;
 
 use std::time::Instant;
 use clap::{
     Arg, Command, crate_version, ArgMatches
 };
-use genetic::{
-    genetic::{
-        gen_pop, test_and_sort, reproduce
-    }, network::Network
+use scratch_genetic::genetic::{
+    gen_pop, test_and_sort, reproduce, load_and_predict, export_model
 };
 use crate::data::{
     GameInfo, TableEntry, NUM_INPUTS, NUM_OUTPUTS
@@ -81,10 +79,7 @@ pub async fn train() {
 
     // Save algorithm
     println!("Saving model to {}", MODEL_FILE_NAME);
-
-    // One last test and sort after reproducing
-    test_and_sort(&mut pop, &games).await;
-    pop[0].save_model(MODEL_FILE_NAME).await;
+    export_model(MODEL_FILE_NAME, &pop[0]).await;
 }
 
 // Load in a model and make a prediction
@@ -118,8 +113,7 @@ pub async fn predict(team_names: &str) {
     let game = GameInfo::from_table_entry(&entry);
 
     println!("Predicting!");
-    let predictor = Network::from_file(MODEL_FILE_NAME);
-    let result = predictor.result(&game.to_input_bits().to_vec()).await;
+    let result = load_and_predict(MODEL_FILE_NAME, &game.to_input_bits().to_vec()).await;
 
     println!("Predicted score for {}: {}", indexable_table_data[0], result[0]);
     println!("Predicted score for {}: {}", indexable_table_data[2], result[1]);
