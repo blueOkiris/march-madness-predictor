@@ -33,7 +33,7 @@ pub async fn gen_pop(
         offset_mutate_chance: f64, offset_mutate_amount: f64) -> Vec<Network> {
 ```
 
-This function generates a random vector of an underlying private struct Network. It's private because you won't need to manually mess with it, you'll just need to pass it between functions
+This function generates a random vector of an underlying private struct Network. It's private because you won't need to manually mess with it, you'll just need to pass it between functions.
 
 You can see it takes quite a few parameters. These are all the manual settings to give to your network to adjust how it trains.
 
@@ -53,7 +53,7 @@ Parameters:
 
 `pub async fn test_and_sort(pop: &mut Vec<Network>, data_set: &Vec<(Vec<u8>, Vec<u8>)>) {`
 
-This takes the "population" (vector of Networks created by [`gen_pop`](#genpop-function)) and your test data, sees how close each nework gets to reproducing your output data, and then sorts the data based on that performance.
+This takes the "population" (vector of Networks created by [`gen_pop`](#genpop-function)) and your test data, sees how close each nework gets to reproducing each test data's output, and then sorts the networks based on that performance.
 
 ### `reproduce` function
 

@@ -2,6 +2,7 @@
 name = "scratch_genetic"
 version = "22.5.16"
 edition = "2021"
+license = "GPL"
 
 [dependencies]
 rand = "0.8.5"
