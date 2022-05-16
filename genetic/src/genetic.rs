@@ -119,3 +119,14 @@ pub async fn reproduce(pop: &mut Vec<Network>) {
     let elapsed = now.elapsed();
     println!("Reproduction took {}s", elapsed.as_secs_f64());
 }
+
+// Load a model from a file and use it to make a prediction
+pub async fn load_and_predict(file_name: &'static str, input_bits: &Vec<u8>) -> Vec<u8> {
+    let predictor = Network::from_file(file_name);
+    predictor.result(input_bits).await
+}
+
+// Test once and export model
+pub async fn export_model(file_name: &'static str, pop: &Network) {
+    pop.save_model(file_name).await;
+}
