@@ -16,13 +16,13 @@ You just need the Rust build system, `cargo`
 
 __Train:__
 
-`cargo run --release --bin mmp`
+`cargo run --release`
 
 The release is important because it adds a MAJOR performance boost
 
 __Predict:__
 
-`cargo run --release --bin mmp -- --predict=<team a name>,<team a seed>,<team b name>,<team b seed>,<date>,<round>,<region>`
+`cargo run --release -- --predict=<team a name>,<team a seed>,<team b name>,<team b seed>,<date>,<round>,<region>`
 
 Round can be (use backslashes to escape spaces):
 - Opening Round
@@ -42,4 +42,4 @@ Region can be (use backslashes to escape spaces):
 - Southwest
 
 Example:
-`cargo run --release --bin mmp -- --predict=Arkansas,9,Iowa,8,3/15/85,Round\ of\ 64,West`
+`cargo run --release -- --predict=Arkansas,9,Iowa,8,3/15/85,Round\ of\ 64,West`

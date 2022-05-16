@@ -1,2 +1,13 @@
-[workspace]
-members = [ "genetic", "mmp" ]
+[package]
+name = "mmp"
+version = "22.5.13"
+edition = "2021"
+
+[dependencies]
+rand = "0.8.5"
+clap = { version = "3.1.5", features = [ "cargo" ] }
+csv = "1.1.6"
+serde = { version = "1.0", features = [ "derive" ] }
+futures = "0.3.21"
+tokio = { version = "1.17.0", features = [ "full" ] }
+scratch_genetic = "22.5.16"
