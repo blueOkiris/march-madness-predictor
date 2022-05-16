@@ -5,8 +5,6 @@
 
 mod data;
 
-extern crate scratch_genetic;
-
 use std::time::Instant;
 use clap::{
     Arg, Command, crate_version, ArgMatches
