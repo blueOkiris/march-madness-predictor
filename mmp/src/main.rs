@@ -11,7 +11,7 @@ use std::time::Instant;
 use clap::{
     Arg, Command, crate_version, ArgMatches
 };
-use scratch_genetic::genetic::{
+use scratch_geneticZ::genetic::{
     gen_pop, test_and_sort, reproduce, load_and_predict, export_model
 };
 use crate::data::{
@@ -30,11 +30,11 @@ pub const OFFSET_MUTATE_AMOUNT: f64 = 0.05;
 pub const LAYER_SIZES: [usize; 4] = [ 8, 32, 32, 16 ];
 
 // Algortithm settings
-const POP_SIZE: usize = 10;
+const POP_SIZE: usize = 2000;
 
 const DATA_FILE_NAME: &'static str = "NCAA Mens March Madness Historical Results.csv";
 const MODEL_FILE_NAME: &'static str = "model.mmp";
-const NUM_GENS: usize = 10;
+const NUM_GENS: usize = 1000;
 
 // Entry point
 #[tokio::main]
