@@ -1,6 +1,6 @@
 [package]
-name = "genetic"
-version = "22.5.13"
+name = "scratch_genetic"
+version = "22.5.16"
 edition = "2021"
 
 [dependencies]
@@ -12,5 +12,5 @@ futures = "0.3.21"
 tokio = { version = "1.17.0", features = [ "full" ] }
 
 [lib]
-name = "genetic"
+name = "scratch_genetic"
 path = "src/lib.rs"

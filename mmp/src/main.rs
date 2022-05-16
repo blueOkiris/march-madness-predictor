@@ -5,13 +5,13 @@
 
 mod data;
 
-extern crate genetic;
+extern crate scratch_genetic;
 
 use std::time::Instant;
 use clap::{
     Arg, Command, crate_version, ArgMatches
 };
-use genetic::genetic::{
+use scratch_genetic::genetic::{
     gen_pop, test_and_sort, reproduce, load_and_predict, export_model
 };
 use crate::data::{
