@@ -1,226 +1,160 @@
-/*
- * Author: Dylan Turner
- * Description: Convert data from CSV to representation to raw "bits"
- */
+// Author: Dylan Turner <dylan.turner@tutanota.com>
+//! Convert CSV game data into raw bits for IO with scratch_genetic
 
-use csv::{
-    Error, Reader
-};
+use std::error::Error;
+use clap::ValueEnum;
+use csv::Reader;
 use serde::Deserialize;
 
-pub const NUM_INPUTS: usize = 68 * 8; // In bits
-pub const NUM_OUTPUTS: usize = 24; // In bits
-const NAME_LEN: usize = 32; // Max name length
+/// Input bits
+pub const NUM_INPUTS: usize = 67 * 8;
 
-/* This is how we'll load in data from the CSV */
+/// Output bits
+pub const NUM_OUTPUTS: usize = 3 * 8;
 
-#[derive(Debug, Deserialize, Clone)]
-pub struct TableEntry {
-    pub date: String,
-    pub round: String,
-    pub region: String,
-    pub win_seed: String,
-    pub winner: String,
-    pub win_score: String,
-    pub lose_seed: String,
-    pub loser: String,
-    pub lose_score: String,
-    pub overtime: String
+/// Maximum length for a team name
+pub const NAME_LEN: usize = 32;
+
+/// What level of the tournament a game took place in
+#[derive(Deserialize, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+pub enum Round {
+    OpeningRound,
+    RoundOf64,
+    RoundOf32,
+    Sweet16,
+    Elite8,
+    Semifinals,
+    Championship
 }
 
-impl TableEntry {
-    pub fn table_from_file(fname: &str) -> Result<Vec<Self>, Error> {
-        let mut data = Vec::new();
-
-        let mut reader = Reader::from_path(fname)?;
-        for result in reader.deserialize() {
-            let record: TableEntry = result?;
-            data.push(record);
+impl Round {
+    /// For storing as bits. Can't use #[repr(u8)] as it could break serde
+    pub fn to_u8(self) -> u8 {
+        match self {
+            Round::OpeningRound => 0,
+            Round::RoundOf64 => 1,
+            Round::RoundOf32 => 2,
+            Round::Sweet16 => 3,
+            Round::Elite8 => 4,
+            Round::Semifinals => 5,
+            Round::Championship => 6
         }
-
-        Ok(data)
     }
 }
 
-/*
- * And this is how we represent it internally
- * Note:
- * - Date: 00000 000.0 000000 0 - Day Month Year Left over bit
- */
-
-#[derive(Debug, Clone, Copy)]
-#[repr(u8)]
-pub enum Round {
-    Opening,
-    R64,
-    R32,
-    Sweet16,
-    Elite8,
-    Semis,
-    Championship,
-    None
-}
-
-#[derive(Debug, Clone, Copy)]
-#[repr(u8)]
+/// What region were the teams from (use Option<Region> as none for Championship)
+#[derive(Deserialize, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 pub enum Region {
-    West,
     East,
     Midwest,
     South,
     Southeast,
     Southwest,
-    None
+    West
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct GameInfo {
-    pub date: u16,
+impl Region {
+    /// For storing as bits. Can't use #[repr(u8)] as it could break serde
+    pub fn to_u8(self) -> u8 {
+        match self {
+            // Note: not 0 bc we could have no region
+            Region::East => 1,
+            Region::Midwest => 2,
+            Region::South => 3,
+            Region::Southeast => 4,
+            Region::Southwest => 5,
+            Region::West => 6
+        }
+    }
+}
+
+/// What a line of the CSV file looks like
+#[derive(Deserialize, Clone, Debug)]
+pub struct Game {
+    /// In the format 85, 86... 12, ... 18
+    pub year: [char; 2],
     pub round: Round,
-    pub region: Region,
-    pub win_seed: u8,
-    pub winner: [u8; NAME_LEN],
-    pub win_score: u8,
-    pub lose_seed: u8,
-    pub loser: [u8; NAME_LEN],
-    pub lose_score: u8,
+    pub region: Option<Region>,
+    pub winner_seed: u8,
+    pub winner_name: [char; NAME_LEN],
+    pub winner_score: u8,
+    pub loser_seed: u8,
+    pub loser_name: [char; NAME_LEN],
+    pub loser_score: u8,
     pub overtime: u8
 }
 
-impl GameInfo {
-    pub fn from_table_entry(entry: &TableEntry) -> Self {
-        // Date is 0000 0000.0 0000000
-        let date_str_pieces = entry.date.split('/');
-        let mut date_pieces = Vec::new();
-        for section in date_str_pieces {
-            date_pieces.push(
-                String::from(section).parse::<u8>().expect("Failed to parse date!")
-            );
+impl Game {
+    /// Read in the columns of the table
+    pub fn vec_from_file(fname: &str) -> Result<Vec<Self>, Box<dyn Error>> {
+        let mut data = Vec::new();
+
+        let mut reader = Reader::from_path(fname)?;
+        for result in reader.deserialize() {
+            data.push(result?);
         }
-        let date =
-            (((date_pieces[0] & 0x0F) as u16) << 12)
-            + (((date_pieces[1] & 0x1F) as u16) << 7)
-            + date_pieces[2] as u16;
 
-        // Round is a set of strings that reocurr
-        let round = match entry.round.as_str() {
-            "Opening Round" => Round::Opening,
-            "Round of 64" => Round::R64,
-            "Round of 32" => Round::R32,
-            "Sweet Sixteen" => Round::Sweet16,
-            "Elite Eight" => Round::Elite8,
-            "National Semifinals" => Round::Semis,
-            "National Championship" => Round::Championship,
-            _ => Round::None
-        };
-
-        // Same with region
-        let region = match entry.region.as_str() {
-            "East" => Region::East,
-            "West" => Region::West,
-            "Midwest" => Region::Midwest,
-            "South" => Region::South,
-            "Southeast" => Region::Southeast,
-            "Southwest" => Region::Southwest,
-            _ => Region::None
-        };
-
-        let win_seed = entry.win_seed.parse::<u8>()
-            .expect("Failed to parse win seed!");
-        let lose_seed = entry.lose_seed.parse::<u8>()
-            .expect("Failed to parse lose seed!");
-
-        // Note: Update 32 in format str with NAME_LEN when changing NAME_LEN!
-        let winner = format!("{: >32}", entry.winner).as_bytes()[0..NAME_LEN].try_into()
-            .expect("Failed to parse winner name!");
-        let loser = format!("{: >32}", entry.loser).as_bytes()[0..NAME_LEN].try_into()
-            .expect("Failed to parse loser name!");
-
-        let win_score = entry.win_score.parse::<u8>()
-            .expect("Failed to parse win score!");
-        let lose_score = entry.lose_score.parse::<u8>()
-            .expect("Failed to parse lose score!");
-
-        let overtime = if entry.overtime.ends_with(" OT") {
-            entry.overtime.clone().replace(" OT", "").parse::<u8>()
-                .expect("Failed to parse overtime!")
-        } else {
-            0
-        };
-
-        Self {
-            date,
-            round,
-            region,
-            win_seed,
-            winner,
-            win_score,
-            lose_seed,
-            loser,
-            lose_score,
-            overtime
-        }
+        Ok(data)
     }
 
-    pub fn collection_from_file(fname: &str) -> Vec<Self> {
-        let mut games = Vec::new();
-
-        let table = TableEntry::table_from_file(fname).expect("Failed to open data file!");
-        for game in table {
-            games.push(GameInfo::from_table_entry(&game));
-
-            /*
-             * De-bias. We don't care who's the winner. We care about team scores
-             * If the positive score is always in front, it bias' the algorithm
-             * making it less correct
-             */
-            let mut rev_game = game.clone();
-            let old_winner = rev_game.winner.clone();
-            let old_win_seed = rev_game.win_seed.clone();
-            let old_win_score = rev_game.win_score.clone();
-            rev_game.winner = rev_game.loser;
-            rev_game.win_seed = rev_game.lose_seed;
-            rev_game.win_score = rev_game.lose_score;
-            rev_game.loser = old_winner;
-            rev_game.lose_seed = old_win_seed;
-            rev_game.lose_score = old_win_score;
-            games.push(GameInfo::from_table_entry(&rev_game));
-        }
-
-        games
-    }
-
-    // "Output bits are the scores" we can just store it as two bytes
+    /// "Output bits are the scores" we can just store it as three bytes
     pub fn to_output_bits(self) -> [u8; NUM_OUTPUTS / 8] {
-        [ self.win_score, self.lose_score, self.overtime ]
+        if self.winner_seed >= self.loser_seed {
+            [ self.winner_score, self.loser_score, self.overtime ]
+        } else {
+            [ self.loser_score, self.winner_score, self.overtime ]
+        }
     }
 
-    /*
-    * And finally we convert it to "bits" for the algorithm
-    * Note:
-    * - Round & Region (& left over): 00 000 000
-    * - Win seed, lose seed: 0000 0000
-    * In total:
-    * R&R (1), WS&LS (1), Winner Name (32), Loser Name (32), Overtime (1) = 69 u8s
-    */
-    pub fn to_input_bits(self) -> [u8; NUM_INPUTS / 8] {
+    /// Convert the data to bits for the algorithm
+    ///
+    /// Note:
+    ///
+    /// - Data set is Winner/Loser, so convert to just high seed/low seed to reduce bias
+    /// - Round & Region (& left over): 00 xxx yyy
+    /// - Winner seed, loser seed => high seed and low seed: xxxx yyyy
+    ///
+    /// In total: Year, R&R (1), HSS&LSS (1), HS Name (32), LS Name (32) = 67 B
+    pub fn to_input_bits(self) -> Result<[u8; NUM_INPUTS / 8], Box<dyn Error>> {
         let mut bits = [0; NUM_INPUTS / 8];
 
-        bits[0] = (self.date >> 8) as u8;
-        bits[1] = (self.date & 0x000F) as u8;
-        bits[2] = ((self.round as u8 & 0x07) << 3) + (self.region as u8 & 0x07);
-        bits[3] = ((self.win_seed & 0x0F) << 4) + (self.lose_seed & 0x0F);
-
-        let mut i = 0;
-        for c in self.winner {
-            bits[4 + i] = c as u8;
-            i += 1;
+        // Years are 1985 through 2018, 2018-1985=33, so we can store that in a single u8
+        bits[0] = self.year.iter().collect::<String>().parse::<u8>()?;
+        bits[1] = (self.round.to_u8() << 3)
+            + if self.region.is_some() {
+                self.region.unwrap().to_u8()
+            } else {
+                0
+            };
+        if self.winner_seed >= self.loser_seed {
+            bits[3] = ((self.winner_seed & 0x0F) << 4) + (self.loser_seed & 0x0F);
+        } else {
+            bits[3] = ((self.loser_seed & 0x0F) << 4) + (self.winner_seed & 0x0F);
         }
-        for c in self.loser {
-            bits[4 + i] = c as u8;
-            i += 1;
+
+        if self.winner_seed >= self.loser_seed {
+            let mut i = 0;
+            for c in self.winner_name {
+                bits[4 + i] = c as u8;
+                i += 1;
+            }
+            for c in self.loser_name {
+                bits[4 + i] = c as u8;
+                i += 1;
+            }
+        } else {
+            let mut i = 0;
+            for c in self.loser_name {
+                bits[4 + i] = c as u8;
+                i += 1;
+            }
+            for c in self.winner_name {
+                bits[4 + i] = c as u8;
+                i += 1;
+            }
         }
 
-        bits
+        Ok(bits)
     }
 }
+
