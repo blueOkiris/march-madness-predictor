@@ -1,12 +1,13 @@
 [package]
 name = "mmp"
-version = "22.5.16"
+version = "23.5.20"
 edition = "2021"
 
 [dependencies]
-clap = { version = "3.1.5", features = [ "cargo" ] }
-csv = "1.1.6"
+clap = { version = "4.3", features = [ "cargo", "derive" ] }
+csv = "1.2"
 serde = { version = "1.0", features = [ "derive" ] }
-futures = "0.3.21"
-tokio = { version = "1.17.0", features = [ "full" ] }
+futures = "0.3"
+tokio = { version = "1.28", features = [ "full" ] }
 scratch_genetic = "22.5.16"
+
