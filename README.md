@@ -16,30 +16,30 @@ You just need the Rust build system, `cargo`
 
 __Train:__
 
-`cargo run --release`
+`cargo run --release -- train`
 
 The release is important because it adds a MAJOR performance boost
 
 __Predict:__
 
-`cargo run --release -- --predict=<team a name>,<team a seed>,<team b name>,<team b seed>,<date>,<round>,<region>`
+`cargo run --release -- predict <year> <round> <optionally region> <higher seed> <higher seed team> <lower seed> <lower seed team>`
 
 Round can be (use backslashes to escape spaces):
-- Opening Round
-- Round of 64
-- Round of 32
-- Sweet Sixteen
-- Elite Eight
-- National Semifinals
-- National Championship
+- OpeningRound
+- RoundOf64
+- RoundOf32
+- Sweet16
+- Elite8
+- Semifinals
+- Championship
 
 Region can be (use backslashes to escape spaces):
-- West
 - East
 - Midwest
 - South
 - Southeast
 - Southwest
+- West
 
 Example:
-`cargo run --release -- --predict=Arkansas,9,Iowa,8,3/15/85,Round\ of\ 64,West`
+`cargo run --release -- predict 23 RoundOf64 West 9 Arkansas 8 Iowa`
