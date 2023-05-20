@@ -4,16 +4,22 @@
  */
 
 mod data;
+mod args;
 
-use std::time::Instant;
-use clap::{
-    Arg, Command, crate_version, ArgMatches
+use std::{
+    time::Instant,
+    error::Error
 };
+use clap::Parser;
 use scratch_genetic::genetic::{
     gen_pop, test_and_sort, reproduce, load_and_predict, export_model
 };
-use crate::data::{
-    GameInfo, TableEntry, NUM_INPUTS, NUM_OUTPUTS
+use crate::{
+    args::{
+        CliArgs, PredictorCommands
+    }, data::{
+        Game, NUM_INPUTS, NUM_OUTPUTS, Round, Region, NAME_LEN
+    }
 };
 
 // Neuron connection settings
@@ -25,36 +31,42 @@ pub const OFFSET_MUTATE_CHANCE: f64 = 0.25;
 pub const OFFSET_MUTATE_AMOUNT: f64 = 0.05;
 
 // Neural network settings
-pub const LAYER_SIZES: [usize; 4] = [ 8, 32, 32, 16 ];
+pub const LAYER_SIZES: [usize; 4] = [ 16, 32, 32, 2 ];
 
 // Algortithm settings
 const POP_SIZE: usize = 2000;
 
-const DATA_FILE_NAME: &'static str = "NCAA Mens March Madness Historical Results.csv";
+const DATA_FILE_NAME: &'static str = "march_madness_historical_data.csv";
 const MODEL_FILE_NAME: &'static str = "model.mmp";
 const NUM_GENS: usize = 1000;
 
 // Entry point
 #[tokio::main]
-async fn main() {
-    let args = get_args();
-
-    if !args.is_present("predict") {
-        train().await;
-    } else {
-        predict(args.value_of("predict").unwrap()).await;
+async fn main() -> Result<(), Box<dyn Error>> {
+    match CliArgs::parse().command {
+        PredictorCommands::Train => train().await,
+        PredictorCommands::Predict {
+            year, round, region,
+            high_seed, high_seed_team,
+            low_seed, low_seed_team
+        } => predict(
+            year.as_str(), round, region,
+            high_seed, high_seed_team.as_str(),
+            low_seed, low_seed_team.as_str()
+        ).await
     }
 }
 
 // Train on march madness legacy data
-pub async fn train() {
+pub async fn train() -> Result<(), Box<dyn Error>> {
     println!("Training new March Madness Predictor Model");
 
     println!("Loading training data from {}", DATA_FILE_NAME);
-    let games = GameInfo::collection_from_file(DATA_FILE_NAME);
-    let games: Vec<(Vec<u8>, Vec<u8>)> = games.iter().map(|game| { // Redefines games
-        (game.to_input_bits().to_vec(), game.to_output_bits().to_vec())
-    }).collect();
+    let games = Game::vec_from_file(DATA_FILE_NAME)?;
+    let games: Vec<(Vec<u8>, Vec<u8>)> = games.iter().map(|game| {( // Redefines games
+        game.clone().to_input_bits().expect("Failed to convert to bits.").to_vec(),
+        game.clone().to_output_bits().to_vec()
+    )}).collect();
 
     println!("Generating randomized population");
     let now = Instant::now();
@@ -78,57 +90,63 @@ pub async fn train() {
     // Save algorithm
     println!("Saving model to {}", MODEL_FILE_NAME);
     export_model(MODEL_FILE_NAME, &pop[0]).await;
+
+    Ok(())
 }
 
 // Load in a model and make a prediction
-pub async fn predict(team_names: &str) {
-    let table_data = team_names.split(",");
-    let mut indexable_table_data = Vec::new();
-    for item in table_data {
-        indexable_table_data.push(item);
+pub async fn predict(
+        year: &str, round: Round, region: Option<Region>,
+        high_seed: u8, high_seed_team: &str,
+        low_seed: u8, low_seed_team: &str) -> Result<(), Box<dyn Error>> {
+    let _ = year.parse::<u8>()?;
+    if year.len() < 2 {
+        Err("Invalid year given!")?;
     }
-    
-    // A team, A seed, B team, B seed, date, round, region
-    if indexable_table_data.len() != 7 {
-        println!("Invalid input string!");
-        return;
+    if high_seed_team.len() > NAME_LEN {
+        Err(format!("Team name {} is longer than {} characters.", high_seed_team, NAME_LEN))?;
+    }
+    if low_seed_team.len() > NAME_LEN {
+        Err(format!("Team name {} is longer than {} characters.", low_seed_team, NAME_LEN))?;
     }
 
     println!("Converting input into data...");
-    let entry = TableEntry {
-        winner: String::from(indexable_table_data[0]),
-        win_seed: String::from(indexable_table_data[1]),
-        loser: String::from(indexable_table_data[2]),
-        lose_seed: String::from(indexable_table_data[3]),
-        date: String::from(indexable_table_data[4]),
-        round: String::from(indexable_table_data[5]),
-        region: String::from(indexable_table_data[6]),
-
-        win_score: String::from("0"),
-        lose_score: String::from("0"),
-        overtime: String::from("")
+    let game = Game {
+        year: [
+            year.chars().collect::<Vec<char>>()[0],
+            year.chars().collect::<Vec<char>>()[1]
+        ], round,
+        region,
+        winner_seed: high_seed, // I promise this isn't adding bias. They get sorted. Look at bits
+        winner_name: name_to_chars(high_seed_team),
+        winner_score: 0,
+        loser_seed: low_seed,
+        loser_name: name_to_chars(low_seed_team),
+        loser_score: 0,
+        overtime: 0
     };
-    let game = GameInfo::from_table_entry(&entry);
 
     println!("Predicting!");
-    let result = load_and_predict(MODEL_FILE_NAME, &game.to_input_bits().to_vec()).await;
+    let result = load_and_predict(MODEL_FILE_NAME, &game.to_input_bits()?.to_vec()).await;
 
-    println!("Predicted score for {}: {}", indexable_table_data[0], result[0]);
-    println!("Predicted score for {}: {}", indexable_table_data[2], result[1]);
+    println!("Predicted score for {}: {}", high_seed_team, result[0]);
+    println!("Predicted score for {}: {}", low_seed_team, result[1]);
     println!("Expected overtimes: {}", result[2]);
+
+    Ok(())
 }
 
-// Note that data in Game prediction should be alphabetical team name
-fn get_args() -> ArgMatches {
-    Command::new("mmp")
-        .version(crate_version!())
-        .author("Dylan Turner <dylantdmt@gmail.com>")
-        .about("March Madness Game Predictor")
-        .arg(
-            Arg::new("predict")
-                .short('p')
-                .long("predict")
-                .takes_value(true)
-                .help("Switches application to prediction mode")
-        ).get_matches()
+/// Convert an &str team name into a char array of fixed size
+fn name_to_chars(name: &str) -> [char; NAME_LEN] {
+    let mut list = ['\0'; NAME_LEN];
+    let mut i = 0;
+    for c in name.chars() {
+        list[i] = c;
+        i += 1;
+        if i >= NAME_LEN {
+            break;
+        }
+    }
+    list
 }
+
